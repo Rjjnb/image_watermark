@@ -6,7 +6,7 @@ import piexif
 import datetime
 
 def get_photo_time(image_path):
-    """优先取EXIF拍摄时间，没有则用文件修改时间"""
+    """获取取EXIF拍摄时间"""
     try:
         img = Image.open(image_path)
         exif = img._getexif()
@@ -14,30 +14,24 @@ def get_photo_time(image_path):
             for tag, value in exif.items():
                 tag_name = ExifTags.TAGS.get(tag, tag)
                 if tag_name == "DateTimeOriginal":
-                    return value  # EXIF里的拍摄时间
+                    return value
     except Exception:
         pass
-    # 没有EXIF，取文件修改时间
-    t = os.path.getmtime(image_path)
-    return datetime.datetime.fromtimestamp(t).strftime("%Y-%m-%d %H:%M:%S")
 
 def add_watermark(image_path, text, font_size=30, color="white", position="right_bottom"):
-    """给图片加文字水印"""
+    """加水印"""
     img = Image.open(image_path).convert("RGBA")
 
     # 创建透明图层
     txt_layer = Image.new("RGBA", img.size, (255,255,255,0))
     draw = ImageDraw.Draw(txt_layer)
-
     try:
         font = ImageFont.truetype("arial.ttf", font_size)  # Windows下常见字体
     except:
         font = ImageFont.load_default()
-
     # 获取文字大小
     bbox = draw.textbbox((0,0), text, font=font)
     text_w, text_h = bbox[2]-bbox[0], bbox[3]-bbox[1]
-
     # 定位
     if position == "left_top":
         pos = (10, 10)
@@ -49,10 +43,8 @@ def add_watermark(image_path, text, font_size=30, color="white", position="right
         pos = ((img.width - text_w)//2, (img.height - text_h)//2)
     else:  # 默认右下角
         pos = (img.width - text_w - 10, img.height - text_h - 10)
-
     # 画文字
     draw.text(pos, text, font=font, fill=color)
-
     # 合并图层
     watermarked = Image.alpha_composite(img, txt_layer).convert("RGB")
     return watermarked
@@ -63,9 +55,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     folder = sys.argv[1]
-    font_size = int(input("请输入字体大小 (默认 30): ") or 30)
-    color = input("请输入颜色 (默认 white): ") or "white"
-    position = input("请输入位置 (left_top, right_top, left_bottom, right_bottom, center，默认 right_bottom): ") or "right_bottom"
+    font_size = int(input("水印字体大小 (默认 30): ") or 30)
+    color = input("水印颜色 (默认 white): ") or "white"
+    position = input("水印位置 (left_top, right_top, left_bottom, right_bottom, center，默认 right_bottom): ") or "right_bottom"
 
     for filename in os.listdir(folder):
         if filename.lower().endswith((".jpg", ".jpeg", ".png")):
